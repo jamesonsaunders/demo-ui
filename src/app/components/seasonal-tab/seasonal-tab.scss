@@ -1,0 +1,177 @@
+.seasonal-charts {
+  &.primary {
+    --tone: var(--color-primary);
+  }
+
+  &.success {
+    --tone: var(--color-success);
+  }
+
+  &.danger {
+    --tone: var(--color-danger);
+  }
+}
+
+.pattern-bars {
+  position: relative;
+  width: 100%;
+  height: 180px;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.pattern-bar {
+  position: absolute;
+  left: 50%;
+  width: 1.5rem;
+  max-width: 70%;
+  background: var(--tone);
+  transform: translateX(-50%);
+  transition: height 0.3s ease;
+
+  &.up {
+    bottom: 50%;
+    border-radius: 4px 4px 0 0;
+  }
+
+  &.down {
+    top: 50%;
+    border-radius: 0 0 4px 4px;
+    opacity: 0.45;
+  }
+}
+
+.projection-bars {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.projection-bar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 1.5rem;
+  max-width: 70%;
+  border: 1px dashed var(--tone);
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  background: color-mix(in srgb, var(--tone) 25%, transparent);
+  transform: translateX(-50%);
+  transition: height 0.3s ease;
+}
+
+.projection-range {
+  position: absolute;
+  left: 50%;
+  width: 2px;
+  background: var(--color-text-muted);
+  transform: translateX(-50%);
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 0.625rem;
+    border-top: 2px solid var(--color-text-muted);
+    transform: translateX(-50%);
+  }
+
+  &::before {
+    top: 0;
+  }
+
+  &::after {
+    bottom: 0;
+  }
+}
+
+.scale-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+
+  .scale {
+    width: 6rem;
+    height: 0.625rem;
+    border-radius: 999px;
+    background: linear-gradient(to right, var(--color-surface-muted), var(--tone));
+    opacity: 0.6;
+  }
+}
+
+.heatmap-wrap {
+  overflow-x: auto;
+}
+
+.heatmap {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-variant-numeric: tabular-nums;
+
+  th {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  thead th {
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: center;
+
+    &:first-child {
+      text-align: left;
+    }
+  }
+
+  tbody th {
+    text-align: left;
+    font-size: 0.875rem;
+    color: var(--color-text);
+  }
+
+  td {
+    position: relative;
+    min-width: 3.75rem;
+    padding: 0.625rem 0.375rem;
+    border-radius: 4px;
+    background: var(--color-surface-muted);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .cell-fill {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--tone);
+    transition: opacity 0.3s ease;
+  }
+
+  .cell-value {
+    position: relative;
+    font-size: 0.8125rem;
+    font-weight: 600;
+
+    &.incomplete {
+      color: var(--color-text-muted);
+      font-style: italic;
+      font-weight: 400;
+    }
+  }
+}

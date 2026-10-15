@@ -1,0 +1,278 @@
+@if (loading()) {
+  <div class="state" role="status"><span class="spinner" aria-hidden="true"></span> Loading...</div>
+} @else if (data(); as d) {
+  @let isRate = metric() === SeasonalMetric.OnTimeRate;
+
+  <div class="toolbar">
+    <p class="muted note">
+      @if (range(); as r) {
+        {{ r.from | date: 'MMM y' }} &ndash; {{ r.through | date: 'MMM y' }}.
+      }
+      @if (d.years) {
+        Pattern uses {{ d.years }} full {{ d.years === 1 ? 'year' : 'years' }}.
+      }
+      The date range filter doesn't apply here.
+    </p>
+    <div class="segmented" role="group" aria-label="Metric">
+      @for (m of metrics; track m) {
+        <button
+          type="button"
+          class="segment"
+          [class.active]="metric() === m"
+          [attr.aria-pressed]="metric() === m"
+          (click)="metric.set(m)"
+        >
+          {{ m | seasonalMetricLabel }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="seasonal-charts" [class]="tone()">
+    @if (d.years) {
+      @if (highlights(); as h) {
+        <div class="kpis">
+          @if (h.high; as m) {
+            <div class="kpi" [class]="tone()">
+              <span class="kpi-label">Highest month</span>
+              <span class="kpi-value">{{ m.month | date: 'MMMM' }}</span>
+              <span class="kpi-sub" [title]="m.agreeLabel">
+                {{ m.index | seasonalIndex: isRate }} vs avg &middot; {{ m.agree }}/{{
+                  m.years
+                }}
+                yrs
+              </span>
+            </div>
+          }
+          @if (h.low; as m) {
+            <div class="kpi">
+              <span class="kpi-label">Lowest month</span>
+              <span class="kpi-value">{{ m.month | date: 'MMMM' }}</span>
+              <span class="kpi-sub" [title]="m.agreeLabel">
+                {{ m.index | seasonalIndex: isRate }} vs avg &middot; {{ m.agree }}/{{
+                  m.years
+                }}
+                yrs
+              </span>
+            </div>
+          }
+          @if (h.highSeason; as s) {
+            <div class="kpi" [class]="tone()">
+              <span class="kpi-label">Highest 3 months</span>
+              <span class="kpi-value"
+                >{{ s.start | date: 'MMM' }}&ndash;{{ s.end | date: 'MMM' }}</span
+              >
+              <span class="kpi-sub">{{ s.index | seasonalIndex: isRate }} vs avg</span>
+            </div>
+          }
+          @if (h.lowSeason; as s) {
+            <div class="kpi">
+              <span class="kpi-label">Lowest 3 months</span>
+              <span class="kpi-value"
+                >{{ s.start | date: 'MMM' }}&ndash;{{ s.end | date: 'MMM' }}</span
+              >
+              <span class="kpi-sub">{{ s.index | seasonalIndex: isRate }} vs avg</span>
+            </div>
+          }
+        </div>
+      }
+
+      <figure class="chart">
+        <figcaption class="chart-header">
+          <h2 class="chart-title">
+            Seasonal pattern: {{ metric() | seasonalMetricLabel | lowercase }}
+          </h2>
+          <span class="muted note">
+            vs. a typical month &middot; yrs = how often the month was on that side of its year's
+            average
+          </span>
+        </figcaption>
+        <div class="chart-scroll">
+          <div class="chart-body">
+            @for (p of pattern(); track $index) {
+              <div class="chart-col">
+                <span class="chart-value">
+                  @if (p.index === null) {
+                    &mdash;
+                  } @else {
+                    {{ p.index | seasonalIndex: isRate }}
+                  }
+                </span>
+                <div class="pattern-bars" aria-hidden="true">
+                  @if (p.index) {
+                    <div
+                      class="pattern-bar"
+                      [class.up]="p.index > 0"
+                      [class.down]="p.index < 0"
+                      [style.height.%]="p.height / 2"
+                    ></div>
+                  }
+                </div>
+                <span class="chart-label">{{ p.month | date: 'MMM' }}</span>
+                @if (p.index) {
+                  <span class="chart-sub" [title]="p.agreeLabel"
+                    >{{ p.agree }}/{{ p.years }} yrs</span
+                  >
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </figure>
+
+      @if (projection().length) {
+        <figure class="chart">
+          <figcaption class="chart-header">
+            <h2 class="chart-title">
+              Projected {{ metric() | seasonalMetricLabel | lowercase }}: next
+              {{ projection().length }} months
+            </h2>
+            <span class="muted note">
+              Estimate from the recent trend and seasonal pattern &middot; line = range from past
+              years
+            </span>
+          </figcaption>
+          <div class="chart-scroll">
+            <div class="chart-body">
+              @for (p of projection(); track $index) {
+                <div class="chart-col">
+                  <span class="chart-value">
+                    @if (p.value === null) {
+                      &mdash;
+                    } @else if (isRate) {
+                      {{ p.value.expected | percent: '1.0-1' }}
+                    } @else {
+                      {{ p.value.expected | number: '1.0-0' }}
+                    }
+                  </span>
+                  <div class="projection-bars" aria-hidden="true">
+                    @if (p.value) {
+                      <div class="projection-bar" [style.height.%]="p.height"></div>
+                      <div
+                        class="projection-range"
+                        [style.bottom.%]="p.low"
+                        [style.height.%]="p.high - p.low"
+                      ></div>
+                    }
+                  </div>
+                  <span class="chart-label">{{ p.month | date: 'MMM yy' }}</span>
+                  @if (p.value) {
+                    <span class="chart-sub">
+                      @if (isRate) {
+                        {{ p.value.low | percent: '1.0-0' }}&ndash;{{
+                          p.value.high | percent: '1.0-0'
+                        }}
+                      } @else {
+                        {{ p.value.low | number: '1.0-0' }}&ndash;{{
+                          p.value.high | number: '1.0-0'
+                        }}
+                      }
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </figure>
+      }
+    } @else {
+      <div class="state">Seasonal patterns need at least one full year of data.</div>
+    }
+
+    <figure class="chart">
+      <figcaption class="chart-header">
+        <h2 class="chart-title">{{ metric() | seasonalMetricLabel }} by month and year</h2>
+        <div class="scale-legend" aria-hidden="true">
+          <span>Low</span>
+          <span class="scale"></span>
+          <span>High</span>
+        </div>
+      </figcaption>
+      <div class="heatmap-wrap">
+        <table class="heatmap">
+          <thead>
+            <tr>
+              <th scope="col">Year</th>
+              @for (month of months; track $index) {
+                <th scope="col">{{ month | date: 'MMM' }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of heatmap(); track row.year) {
+              <tr>
+                <th scope="row">{{ row.year }}</th>
+                @for (cell of row.cells; track $index) {
+                  <td
+                    [attr.title]="cell.complete ? null : 'Incomplete data, left out of the pattern'"
+                  >
+                    @if (cell.value !== null) {
+                      @if (cell.complete) {
+                        <span
+                          class="cell-fill"
+                          aria-hidden="true"
+                          [style.opacity]="0.06 + cell.intensity * 0.44"
+                        ></span>
+                      }
+                      <span class="cell-value" [class.incomplete]="!cell.complete">
+                        @if (isRate) {
+                          {{ cell.value | percent: '1.0-1' }}
+                        } @else {
+                          {{ cell.value | number: '1.0-0' }}
+                        }
+                      </span>
+                    } @else {
+                      <span class="cell-value muted">&mdash;</span>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </figure>
+
+    @if (d.years) {
+      <figure class="chart">
+        <figcaption class="chart-header">
+          <h2 class="chart-title">
+            @if (isRate) {
+              On-time rate by month (all years combined)
+            } @else {
+              Average {{ metric() | seasonalMetricLabel | lowercase }} by month
+            }
+          </h2>
+        </figcaption>
+        <div class="chart-scroll">
+          <div class="chart-body">
+            @for (avg of averages(); track $index) {
+              <div class="chart-col">
+                <span class="chart-value">
+                  @if (avg.value === null) {
+                    &mdash;
+                  } @else if (isRate) {
+                    {{ avg.value | percent: '1.0-1' }}
+                  } @else {
+                    {{ avg.value | number: '1.0-0' }}
+                  }
+                </span>
+                <div class="chart-bars">
+                  <div
+                    class="chart-bar"
+                    [class]="tone()"
+                    [style.height.%]="avg.height"
+                    aria-hidden="true"
+                  ></div>
+                </div>
+                <span class="chart-label">{{ avg.month | date: 'MMM' }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </figure>
+    }
+  </div>
+} @else {
+  <div class="state">No deliveries for this branch.</div>
+}

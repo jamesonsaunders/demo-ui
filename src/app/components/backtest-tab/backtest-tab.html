@@ -1,0 +1,196 @@
+@if (loading()) {
+  <div class="state" role="status"><span class="spinner" aria-hidden="true"></span> Loading...</div>
+} @else if (data(); as d) {
+  @let isRate = metric() === SeasonalMetric.OnTimeRate;
+
+  <div class="toolbar">
+    <p class="muted note">
+      @if (range(); as r) {
+        {{ d.tests }} {{ d.tests === 1 ? 'test' : 'tests' }} over
+        {{ r.dataFrom | date: 'MMM y' }} &ndash; {{ r.dataThrough | date: 'MMM y' }}, each
+        forecasting 1&ndash;12 months ahead. Uses {{ d.years }}
+        {{ d.years === 1 ? 'year' : 'years' }} of history
+        @if (d.recentWeight) {
+          with {{ d.recentWeight | percent }} extra weight on recent months,
+        } @else {
+          weighted evenly,
+        }
+        @if (d.trendWeight) {
+          {{ d.trendWeight | percent }} weight on the recent trend,
+        } @else {
+          no trend,
+        }
+        {{ d.workingDays ? 'adjusted' : 'not adjusted' }} for working days. That setup tested best.
+      }
+    </p>
+    <div class="segmented" role="group" aria-label="Metric">
+      @for (m of metrics; track m) {
+        <button
+          type="button"
+          class="segment"
+          [class.active]="metric() === m"
+          [attr.aria-pressed]="metric() === m"
+          (click)="metric.set(m)"
+        >
+          {{ m | seasonalMetricLabel }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="backtest" [class]="tone()">
+    @if (scores(); as s) {
+      @if (s.months) {
+        <div class="kpis">
+          @if (s.coverage != null) {
+            <div class="kpi" [class]="tone()">
+              <span class="kpi-label">Inside 80% range</span>
+              <span class="kpi-value">{{ s.coverage | percent: '1.0-0' }}</span>
+              <span class="kpi-sub"
+                >of {{ s.coverageMonths | number }} forecasts with a range (aim: 80%)</span
+              >
+            </div>
+          }
+          @if (s.mae != null) {
+            <div class="kpi">
+              <span class="kpi-label">Avg miss per month</span>
+              <span class="kpi-value">{{ s.mae | metricDiff: isRate }}</span>
+              <span class="kpi-sub">
+                @if (s.wape != null) {
+                  {{ s.wape | percent: '1.0-1' }} of actual
+                } @else {
+                  average absolute error
+                }
+              </span>
+            </div>
+          }
+          @if (s.bias != null) {
+            <div class="kpi">
+              <span class="kpi-label">Bias</span>
+              <span class="kpi-value">{{ s.bias | metricDiff: isRate : true }}</span>
+              <span class="kpi-sub">
+                {{
+                  s.bias > 0 ? 'Forecast runs high' : s.bias < 0 ? 'Forecast runs low' : 'No bias'
+                }}
+              </span>
+            </div>
+          }
+          @for (skill of skills(); track skill.label) {
+            <div class="kpi" [class.success]="skill.value > 0" [class.danger]="skill.value < 0">
+              <span class="kpi-label">vs. {{ skill.label }}</span>
+              <span class="kpi-value"
+                >{{ skill.value > 0 ? '+' : '' }}{{ skill.value | percent: '1.0-0' }}</span
+              >
+              <span class="kpi-sub"
+                >{{ skill.value >= 0 ? 'less' : 'more' }} error than {{ skill.label }}</span
+              >
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="state">No forecasts could be scored for this metric.</div>
+      }
+    }
+
+    <figure class="chart">
+      <figcaption class="chart-header">
+        <div>
+          <h2 class="chart-title">Latest test: {{ metric() | seasonalMetricLabel | lowercase }}</h2>
+          @if (range(); as r) {
+            <span class="muted note">
+              {{ r.testFrom | date: 'MMM y' }} &ndash; {{ r.testTo | date: 'MMM y' }}, forecast from
+              {{ r.trainedFrom | date: 'MMM y' }} &ndash; {{ r.trainedThrough | date: 'MMM y' }} ({{
+                d.latest.years
+              }}
+              {{ d.latest.years === 1 ? 'year' : 'years' }})
+            </span>
+          }
+        </div>
+        <div class="legend muted" aria-hidden="true">
+          <span><span class="legend-band"></span> 80% range</span>
+          <span><span class="legend-expected"></span> Forecast</span>
+          <span><span class="legend-actual"></span> Actual</span>
+          <span><span class="legend-actual miss"></span> Outside range</span>
+        </div>
+      </figcaption>
+      <div class="chart-scroll">
+        <div class="chart-body">
+          @for (r of rows(); track $index) {
+            <div class="chart-col">
+              <span class="chart-value">
+                @if (r.point; as p) {
+                  {{ p.actual | metricValue: isRate }}
+                } @else {
+                  &mdash;
+                }
+              </span>
+              <div class="backtest-plot" aria-hidden="true">
+                @if (r.point; as p) {
+                  <div
+                    class="backtest-band"
+                    [style.bottom.%]="r.low"
+                    [style.height.%]="r.high - r.low"
+                  ></div>
+                  <div class="backtest-expected" [style.bottom.%]="r.expected"></div>
+                  <div
+                    class="backtest-actual"
+                    [class.miss]="!p.inRange"
+                    [style.bottom.%]="r.actual"
+                  ></div>
+                }
+              </div>
+              <span class="chart-label">{{ r.month | date: 'MMM yy' }}</span>
+              @if (r.point; as p) {
+                <span class="chart-sub">fcst {{ p.expected | metricValue: isRate }}</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </figure>
+
+    <figure class="chart">
+      <figcaption class="chart-header">
+        <h2 class="chart-title">Latest test, month by month</h2>
+      </figcaption>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Month</th>
+              <th scope="col" class="num">Actual</th>
+              <th scope="col" class="num">Forecast</th>
+              <th scope="col" class="num">80% range</th>
+              <th scope="col" class="num">Error</th>
+              <th scope="col">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rows(); track $index) {
+              <tr>
+                <th scope="row">{{ r.month | date: 'MMM y' }}</th>
+                @if (r.point; as p) {
+                  <td class="num">{{ p.actual | metricValue: isRate }}</td>
+                  <td class="num">{{ p.expected | metricValue: isRate }}</td>
+                  <td class="num">
+                    {{ p.low | metricValue: isRate }} &ndash; {{ p.high | metricValue: isRate }}
+                  </td>
+                  <td class="num">{{ r.error | metricDiff: isRate : true }}</td>
+                  <td>
+                    <span class="result" [class.miss]="!p.inRange">
+                      {{ p.inRange ? 'In range' : r.above ? 'Above range' : 'Below range' }}
+                    </span>
+                  </td>
+                } @else {
+                  <td class="muted" colspan="5">No deliveries or no forecast</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </figure>
+  </div>
+} @else {
+  <div class="state">No backtest results for this branch.</div>
+}

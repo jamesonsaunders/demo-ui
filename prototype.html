@@ -1,0 +1,550 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Deliveries - prototype</title>
+<style>
+  body {
+    font: 14px sans-serif;
+    max-width: 900px;
+    margin: 2em auto;
+    padding: 0 1em;
+  }
+  * {
+    color: #000;
+    background: #fff;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  form,
+  section,
+  .k > div,
+  table {
+    border: 1px solid #000;
+  }
+  form,
+  section {
+    padding: 1em;
+    margin: 1em 0;
+  }
+  form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+    align-items: end;
+  }
+  label {
+    display: grid;
+  }
+  button,
+  select,
+  input {
+    font: inherit;
+    border: 1px solid #000;
+    padding: 4px 8px;
+  }
+  [aria-pressed='true'] {
+    background: #000;
+    color: #fff;
+  }
+  .k {
+    display: flex;
+    gap: 1em;
+    margin-bottom: 1em;
+  }
+  .k > div {
+    flex: 1;
+    padding: 0.5em;
+  }
+  .k b {
+    display: block;
+    font-size: 20px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+  }
+  td,
+  th {
+    border: 1px solid #000;
+    padding: 4px;
+    text-align: left;
+  }
+  .c {
+    display: flex;
+    align-items: end;
+    gap: 6px;
+    height: 100px;
+    border-bottom: 1px solid #000;
+  }
+  .c i {
+    flex: 1;
+    background: #000;
+  }
+  .c i.o {
+    border: 1px solid #000;
+    background: #fff;
+  }
+  .l {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1em;
+  }
+  .l span {
+    flex: 1;
+    text-align: center;
+  }
+  .bar {
+    display: inline-block;
+    height: 8px;
+    background: #000;
+  }
+</style>
+
+<h1>Deliveries</h1>
+<p>On-time performance and delay reasons across branches.</p>
+
+<form onsubmit="return false;">
+  <label data-t="cod"
+    >Date range<select>
+      <option>Last 7 days</option>
+      <option>Last month</option>
+      <option>Last 3 months</option>
+      <option>Last 12 months</option>
+      <option>Month to date</option>
+      <option>Year to date</option>
+      <option>Previous calendar month</option>
+      <option>Previous calendar year</option>
+      <option>All time</option>
+      <option>Custom</option>
+    </select></label
+  >
+  <label data-t="cod">Start<input type="date" /></label>
+  <label data-t="cod">End<input type="date" /></label>
+  <label
+    >Branch<select>
+      <option>All branches</option>
+      <option>North</option>
+      <option>South</option>
+    </select></label
+  >
+  <label data-t="co"
+    >Group by<select>
+      <option>Day</option>
+      <option>Week</option>
+      <option selected>Month</option>
+      <option>Year</option>
+    </select></label
+  >
+  <button>Apply</button>
+</form>
+
+<nav>
+  <button data-n="s">Seasonal trends</button>
+  <button data-n="d">Delay reasons</button>
+  <button data-n="w">What's changing</button>
+</nav>
+
+<section id="s">
+  <p>Jan 2023 - Dec 2025. Pattern uses 3 full years. The date range filter doesn't apply here.</p>
+  <p>
+    <button aria-pressed="true">Total deliveries</button> <button>On-time rate</button>
+    <button>Late deliveries</button>
+  </p>
+  <div class="k">
+    <div>Highest month<b>December</b>+18% vs avg - 3/3 yrs</div>
+    <div>Lowest month<b>February</b>-14% vs avg - 3/3 yrs</div>
+    <div>Highest 3 months<b>Oct-Dec</b>+12% vs avg</div>
+    <div>Lowest 3 months<b>Jan-Mar</b>-10% vs avg</div>
+  </div>
+  <h3>Seasonal pattern (vs. a typical month)</h3>
+  <table>
+    <tr>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>
+        Dec
+        <tr>
+          <td>-9%</td>
+          <td>-14%</td>
+          <td>-7%</td>
+          <td>-2%</td>
+          <td>+1%</td>
+          <td>+3%</td>
+          <td>-4%</td>
+          <td>-1%</td>
+          <td>+2%</td>
+          <td>+6%</td>
+          <td>+11%</td>
+          <td>+18%</td>
+        </tr>
+      </th>
+    </tr>
+  </table>
+  <h3>Projected: next 6 months <small>(expected, low-high)</small></h3>
+  <table>
+    <tr>
+      <th>Jan 26</th>
+      <th>Feb 26</th>
+      <th>Mar 26</th>
+      <th>Apr 26</th>
+      <th>May 26</th>
+      <th>
+        Jun 26
+        <tr>
+          <td>1,180<br /><small>1,050-1,300</small></td>
+          <td>1,090<br /><small>980-1,210</small></td>
+          <td>1,200<br /><small>1,100-1,320</small></td>
+          <td>1,260<br /><small>1,150-1,370</small></td>
+          <td>1,300<br /><small>1,190-1,410</small></td>
+          <td>1,320<br /><small>1,200-1,440</small></td>
+        </tr>
+      </th>
+    </tr>
+  </table>
+  <h3>By month and year</h3>
+  <table>
+    <tr>
+      <th>Year</th>
+      <th>Jan</th>
+      <th>Feb</th>
+      <th>Mar</th>
+      <th>Apr</th>
+      <th>May</th>
+      <th>Jun</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>
+        Dec
+        <tr>
+          <th>2024</th>
+          <td>1,050</td>
+          <td>980</td>
+          <td>1,100</td>
+          <td>1,180</td>
+          <td>1,210</td>
+          <td>1,240</td>
+          <td>1,150</td>
+          <td>1,190</td>
+          <td>1,230</td>
+          <td>1,290</td>
+          <td>1,360</td>
+          <td>
+            1,450
+            <tr>
+              <th>2025</th>
+              <td>1,120</td>
+              <td>1,040</td>
+              <td>1,160</td>
+              <td>1,230</td>
+              <td>1,270</td>
+              <td>1,290</td>
+              <td>1,200</td>
+              <td>1,240</td>
+              <td>1,280</td>
+              <td>1,340</td>
+              <td>1,420</td>
+              <td>1,510</td>
+            </tr>
+          </td>
+        </tr>
+      </th>
+    </tr>
+  </table>
+</section>
+
+<section id="d">
+  <div class="k">
+    <div>Delayed orders<b>540</b></div>
+    <div>Reasons<b>4</b></div>
+    <div>Top reason<b>Traffic</b></div>
+  </div>
+  <table>
+    <tr>
+      <th>Reason</th>
+      <th>Share</th>
+      <th>Count</th>
+      <th>
+        % of delays
+        <tr>
+          <td>Traffic</td>
+          <td><span class="bar" style="width: 100px"></span></td>
+          <td>210</td>
+          <td>
+            38.9%
+            <tr>
+              <td>Weather</td>
+              <td><span class="bar" style="width: 69px"></span></td>
+              <td>145</td>
+              <td>
+                26.9%
+                <tr>
+                  <td>Stock shortage</td>
+                  <td><span class="bar" style="width: 52px"></span></td>
+                  <td>110</td>
+                  <td>
+                    20.4%
+                    <tr>
+                      <td>Vehicle issue</td>
+                      <td><span class="bar" style="width: 36px"></span></td>
+                      <td>75</td>
+                      <td>13.9%</td>
+                    </tr>
+                  </td>
+                </tr>
+              </td>
+            </tr>
+          </td>
+        </tr>
+      </th>
+    </tr>
+  </table>
+</section>
+
+<section id="w">
+  <p>Jul - Dec 2025, last 6 full months. The date range filter doesn't apply here.</p>
+  <form onsubmit="return false;">
+    <label
+      >Compare to<select>
+        <option>Previous month</option>
+        <option>Average of previous 3 months</option>
+        <option>Same month last year</option>
+      </select></label
+    >
+  </form>
+
+  <h3>Biggest movers</h3>
+  <ul>
+    <li>▲ <b>Weather</b> delays up 45% vs Nov (100 → 145), rising 4 months in a row</li>
+    <li>▲ <b>Harbor</b> delay rate up 2.5pp vs Nov (5.4% → 7.9%)</li>
+    <li>▲ <b>North</b> delay rate rising 5 months in a row (6.1% → 9.2% since Jul)</li>
+    <li>▼ <b>South</b> delay rate falling 5 months in a row (8.0% → 6.2% since Jul)</li>
+    <li>▼ <b>Stock shortage</b> delays down 22% vs Nov (90 → 70)</li>
+  </ul>
+  <p><small>Airport not listed: too few deliveries (39 in Dec) for changes to mean much.</small></p>
+
+  <h3>Delay rate by branch</h3>
+  <table>
+    <tr>
+      <th>Branch</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+      <th>Change vs Nov</th>
+      <th>Trend</th>
+    </tr>
+    <tr>
+      <td>Airport *</td>
+      <td>5.0%</td>
+      <td>2.5%</td>
+      <td>7.5%</td>
+      <td>5.0%</td>
+      <td>2.6%</td>
+      <td>7.7%</td>
+      <td>▲ +5.1pp</td>
+      <td>– Mixed</td>
+    </tr>
+    <tr>
+      <td>Harbor</td>
+      <td>5.0%</td>
+      <td>5.2%</td>
+      <td>4.9%</td>
+      <td>5.1%</td>
+      <td>5.4%</td>
+      <td>7.9%</td>
+      <td>▲ +2.5pp</td>
+      <td>▲ Rising</td>
+    </tr>
+    <tr>
+      <td>North</td>
+      <td>6.1%</td>
+      <td>6.4%</td>
+      <td>7.0%</td>
+      <td>7.8%</td>
+      <td>8.5%</td>
+      <td>9.2%</td>
+      <td>▲ +0.7pp</td>
+      <td>▲ Rising</td>
+    </tr>
+    <tr>
+      <td>East</td>
+      <td>7.2%</td>
+      <td>7.0%</td>
+      <td>7.4%</td>
+      <td>7.1%</td>
+      <td>7.3%</td>
+      <td>7.5%</td>
+      <td>▲ +0.2pp</td>
+      <td>– Mixed</td>
+    </tr>
+    <tr>
+      <td>West</td>
+      <td>6.5%</td>
+      <td>6.6%</td>
+      <td>6.4%</td>
+      <td>6.5%</td>
+      <td>6.7%</td>
+      <td>6.6%</td>
+      <td>▼ −0.1pp</td>
+      <td>– Mixed</td>
+    </tr>
+    <tr>
+      <td>Central</td>
+      <td>8.8%</td>
+      <td>8.6%</td>
+      <td>8.9%</td>
+      <td>8.7%</td>
+      <td>8.5%</td>
+      <td>8.3%</td>
+      <td>▼ −0.2pp</td>
+      <td>▼ Falling</td>
+    </tr>
+    <tr>
+      <td>Downtown</td>
+      <td>9.5%</td>
+      <td>9.9%</td>
+      <td>9.4%</td>
+      <td>9.6%</td>
+      <td>9.8%</td>
+      <td>9.3%</td>
+      <td>▼ −0.5pp</td>
+      <td>– Mixed</td>
+    </tr>
+    <tr>
+      <td>Riverside</td>
+      <td>5.5%</td>
+      <td>5.8%</td>
+      <td>6.0%</td>
+      <td>5.7%</td>
+      <td>5.9%</td>
+      <td>5.3%</td>
+      <td>▼ −0.6pp</td>
+      <td>– Mixed</td>
+    </tr>
+    <tr>
+      <td>South</td>
+      <td>8.0%</td>
+      <td>7.9%</td>
+      <td>7.5%</td>
+      <td>7.1%</td>
+      <td>6.8%</td>
+      <td>6.2%</td>
+      <td>▼ −0.6pp</td>
+      <td>▼ Falling</td>
+    </tr>
+    <tr>
+      <td>Hillside</td>
+      <td>7.0%</td>
+      <td>7.3%</td>
+      <td>7.1%</td>
+      <td>7.4%</td>
+      <td>8.6%</td>
+      <td>6.9%</td>
+      <td>▼ −1.7pp</td>
+      <td>– Mixed</td>
+    </tr>
+  </table>
+  <p>
+    <small
+      >* Under 50 deliveries a month (3 late of 39 in Dec). Changes here are mostly noise.</small
+    >
+  </p>
+  <p>
+    <small
+      >Trend: Rising = up each of the last 3 months, Falling = down each of the last 3 months,
+      otherwise Mixed.</small
+    >
+  </p>
+
+  <h3>Delay reasons over time</h3>
+  <p>
+    <small>Delayed orders per month, all branches. Use the Branch filter to see one branch.</small>
+  </p>
+  <table>
+    <tr>
+      <th>Reason</th>
+      <th>Jul</th>
+      <th>Aug</th>
+      <th>Sep</th>
+      <th>Oct</th>
+      <th>Nov</th>
+      <th>Dec</th>
+      <th>Change vs Nov</th>
+      <th>Share of delays (Dec)</th>
+      <th>Trend</th>
+    </tr>
+    <tr>
+      <td>Weather</td>
+      <td>40</td>
+      <td>38</td>
+      <td>45</td>
+      <td>60</td>
+      <td>100</td>
+      <td>145</td>
+      <td>▲ +45 (+45%)</td>
+      <td>42.0% (▲ +11.0pp)</td>
+      <td>▲ Rising</td>
+    </tr>
+    <tr>
+      <td>Traffic</td>
+      <td>92</td>
+      <td>95</td>
+      <td>90</td>
+      <td>94</td>
+      <td>96</td>
+      <td>98</td>
+      <td>▲ +2 (+2%)</td>
+      <td>28.4% (▼ −1.3pp)</td>
+      <td>▲ Rising</td>
+    </tr>
+    <tr>
+      <td>Vehicle issue</td>
+      <td>55</td>
+      <td>50</td>
+      <td>46</td>
+      <td>41</td>
+      <td>37</td>
+      <td>32</td>
+      <td>▼ −5 (−14%)</td>
+      <td>9.3% (▼ −2.2pp)</td>
+      <td>▼ Falling</td>
+    </tr>
+    <tr>
+      <td>Stock shortage</td>
+      <td>70</td>
+      <td>72</td>
+      <td>68</td>
+      <td>75</td>
+      <td>90</td>
+      <td>70</td>
+      <td>▼ −20 (−22%)</td>
+      <td>20.3% (▼ −7.6pp)</td>
+      <td>– Mixed</td>
+    </tr>
+  </table>
+</section>
+
+<script>
+  const show = (n) => {
+    document.querySelectorAll('section').forEach((s) => (s.hidden = s.id != n));
+    document.querySelectorAll('[data-t]').forEach((e) => (e.hidden = !e.dataset.t.includes(n)));
+    document.querySelectorAll('[data-n]').forEach((b) => (b.ariaPressed = b.dataset.n == n));
+  };
+  document.querySelectorAll('[data-n]').forEach((b) => (b.onclick = () => show(b.dataset.n)));
+  show('s');
+</script>

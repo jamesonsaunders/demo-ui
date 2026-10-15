@@ -1,7 +1,0 @@
-@if (hello.isLoading()) {
-  <p role="status">Loading...</p>
-} @else if (hello.error()) {
-  <p role="alert">Couldn't reach the API.</p>
-} @else {
-  <h1>{{ hello.value() }}</h1>
-}

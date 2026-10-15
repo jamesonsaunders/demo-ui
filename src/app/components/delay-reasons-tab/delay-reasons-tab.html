@@ -1,0 +1,47 @@
+@if (loading()) {
+  <div class="state" role="status"><span class="spinner" aria-hidden="true"></span> Loading...</div>
+} @else if (data().length === 0) {
+  <div class="state">No delays for these filters.</div>
+} @else {
+  <div class="kpis">
+    <div class="kpi danger">
+      <span class="kpi-label">Delayed orders</span>
+      <span class="kpi-value">{{ total() | number }}</span>
+    </div>
+    <div class="kpi">
+      <span class="kpi-label">Reasons</span>
+      <span class="kpi-value">{{ data().length | number }}</span>
+    </div>
+    <div class="kpi primary">
+      <span class="kpi-label">Top reason</span>
+      <span class="kpi-value kpi-text">{{ data()[0].reason }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Reason</th>
+          <th scope="col" class="share-col">Share</th>
+          <th scope="col" class="num">Count</th>
+          <th scope="col" class="num">% of delays</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of data(); track row.reason) {
+          <tr>
+            <th scope="row">{{ row.reason }}</th>
+            <td>
+              <div class="bar danger" aria-hidden="true">
+                <span [style.width.%]="(row.count / maxCount()) * 100"></span>
+              </div>
+            </td>
+            <td class="num">{{ row.count | number }}</td>
+            <td class="num muted">{{ row.count / total() | percent: '1.0-1' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

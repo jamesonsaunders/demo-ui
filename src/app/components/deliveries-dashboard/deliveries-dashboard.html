@@ -1,0 +1,101 @@
+<header class="page-header">
+  <h1>Deliveries</h1>
+  <p class="subtitle">On-time performance and delay reasons across branches.</p>
+</header>
+
+<form class="card filters" [formGroup]="filters" (ngSubmit)="load()">
+  @if (activeTab() === DashboardTab.DelayReasons) {
+    <label class="field">
+      <span class="field-label">Date range</span>
+      <select formControlName="datePreset">
+        @for (preset of filterState.datePresets; track preset) {
+          <option [value]="preset">{{ preset | dateRangePresetLabel }}</option>
+        }
+      </select>
+    </label>
+    <label class="field">
+      <span class="field-label">Start</span>
+      <input type="date" formControlName="start" />
+    </label>
+    <label class="field">
+      <span class="field-label">End</span>
+      <input type="date" formControlName="end" />
+    </label>
+  }
+  @if (activeTab() === DashboardTab.Trends) {
+    <div class="field">
+      <label class="field-label" for="trends-end">End date</label>
+      <span class="field-hint" id="trends-end-hint">Leave empty for the latest complete month</span>
+      <input
+        id="trends-end"
+        type="date"
+        aria-describedby="trends-end-hint"
+        formControlName="trendsEnd"
+      />
+    </div>
+    <label class="field">
+      <span class="field-label">Compare to</span>
+      <select formControlName="trendsCompareTo">
+        @for (baseline of filterState.trendBaselines; track baseline) {
+          <option [value]="baseline">{{ baseline | trendBaselineLabel }}</option>
+        }
+      </select>
+    </label>
+  }
+  <label class="field">
+    <span class="field-label">Branch</span>
+    <select formControlName="branch">
+      <option value="">{{ branchesLoading() ? 'Loading branches...' : 'All branches' }}</option>
+      @for (branch of branches(); track branch) {
+        <option [value]="branch">{{ branch }}</option>
+      }
+    </select>
+  </label>
+  <button type="submit" class="btn-primary" [disabled]="loading()">
+    @if (loading()) {
+      <span class="spinner" aria-hidden="true"></span>
+      Loading...
+    } @else {
+      Apply
+    }
+  </button>
+</form>
+
+<div class="tabs" role="tablist" aria-label="Delivery reports">
+  @for (tab of filterState.tabs; track tab) {
+    <button
+      type="button"
+      role="tab"
+      class="tab"
+      [id]="'tab-' + tab"
+      [class.active]="activeTab() === tab"
+      [attr.aria-selected]="activeTab() === tab"
+      [attr.aria-controls]="'panel-' + tab"
+      (click)="filterState.selectTab(tab)"
+    >
+      {{ tab | dashboardTabLabel }}
+    </button>
+  }
+</div>
+
+<section
+  class="card panel"
+  role="tabpanel"
+  [id]="'panel-' + activeTab()"
+  [attr.aria-labelledby]="'tab-' + activeTab()"
+>
+  @switch (activeTab()) {
+    @case (DashboardTab.Seasonal) {
+      <app-seasonal-tab [data]="seasonal()" [loading]="seasonalLoading()" />
+    }
+    @case (DashboardTab.Backtest) {
+      <app-backtest-tab [data]="backtest()" [loading]="backtestLoading()" />
+    }
+    @case (DashboardTab.DelayReasons) {
+      <app-delay-reasons-tab [data]="delayReasons()" [loading]="delayReasonsLoading()" />
+    }
+    @case (DashboardTab.Trends) {
+      <app-trends-tab [data]="trends()" [loading]="trendsLoading()" [branch]="appliedBranch()" />
+    }
+  }
+</section>

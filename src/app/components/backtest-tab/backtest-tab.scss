@@ -1,0 +1,105 @@
+.backtest {
+  &.primary {
+    --tone: var(--color-primary);
+  }
+
+  &.success {
+    --tone: var(--color-success);
+  }
+
+  &.danger {
+    --tone: var(--color-danger);
+  }
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.8125rem;
+
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+}
+
+.legend-band {
+  width: 0.875rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--tone) 20%, transparent);
+}
+
+.legend-expected {
+  width: 0.875rem;
+  border-top: 2px dashed var(--tone);
+}
+
+.legend-actual,
+.backtest-actual {
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-text);
+  box-shadow: 0 0 0 1px var(--color-text);
+
+  &.miss {
+    background: var(--color-danger);
+    box-shadow: 0 0 0 1px var(--color-danger);
+  }
+}
+
+.backtest-plot {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.backtest-band {
+  position: absolute;
+  left: 50%;
+  width: 1.75rem;
+  max-width: 80%;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--tone) 20%, transparent);
+  transform: translateX(-50%);
+  transition:
+    bottom 0.3s ease,
+    height 0.3s ease;
+}
+
+.backtest-expected {
+  position: absolute;
+  left: 50%;
+  width: 1.75rem;
+  max-width: 80%;
+  border-top: 2px dashed var(--tone);
+  transform: translateX(-50%);
+  transition: bottom 0.3s ease;
+}
+
+.backtest-actual {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  transition: bottom 0.3s ease;
+}
+
+.result {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  &.miss {
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+}

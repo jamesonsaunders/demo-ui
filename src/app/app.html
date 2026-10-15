@@ -1,2 +1,20 @@
-<app-hello-world />
-<router-outlet />
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="/" aria-label="Northgate Builders' Merchants home">
+      <span class="logo-mark">Northgate</span>
+      <span class="logo-sub">Builders' Merchants</span>
+    </a>
+  </div>
+</header>
+
+<main class="site-main">
+  <router-outlet />
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    &copy; {{ currentYear }} Northgate Builders' Merchants. All rights reserved.
+  </div>
+</footer>
+
+<app-toasts />

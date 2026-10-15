@@ -1,0 +1,202 @@
+<div class="toolbar">
+  <p class="muted note">
+    @if (latest(); as through) {
+      {{ months()[0] | date: 'MMM y' }} &ndash; {{ through | date: 'MMM y' }},
+      {{ months().length }} full months.
+    }
+  </p>
+</div>
+
+@if (loading()) {
+  <div class="state" role="status"><span class="spinner" aria-hidden="true"></span> Loading...</div>
+} @else if (data(); as d) {
+  @if (d.branches.length === 0) {
+    <div class="state">No deliveries in the last {{ d.months.length }} months.</div>
+  } @else {
+    <section class="chart">
+      <header class="chart-header">
+        <h2 class="chart-title">Biggest movers</h2>
+      </header>
+      @if (movers().length) {
+        <ul class="movers">
+          @for (m of movers(); track m.kind + m.name) {
+            <li class="mover" [class.up]="m.up" [class.down]="!m.up">
+              <span class="mover-icon" aria-hidden="true">{{ m.up ? '▲' : '▼' }}</span>
+              <span>
+                <strong>{{ m.name }}</strong>
+                @if (m.kind === 'branch') {
+                  delay rate {{ m.up ? 'up' : 'down' }} {{ m.size * 100 | number: '1.1-1' }} pts
+                  {{ baselineLabel() }}
+                  <span class="muted"
+                    >({{ m.from | percent: '1.1-1' }} &rarr; {{ m.to | percent: '1.1-1' }})</span
+                  >
+                } @else {
+                  delays {{ m.up ? 'up' : 'down' }} {{ m.size | percent: '1.0-0' }}
+                  {{ baselineLabel() }}
+                  <span class="muted"
+                    >({{ m.from | number: '1.0-0' }} &rarr; {{ m.to | number: '1.0-0' }})</span
+                  >
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted note">No notable changes {{ baselineLabel() }}.</p>
+      }
+      @if (lowVolumeBranches()) {
+        <p class="muted note footnote">
+          {{ lowVolumeBranches() }} not listed: too few deliveries for changes to mean much.
+        </p>
+      }
+    </section>
+
+    <section class="chart">
+      <header class="chart-header">
+        <h2 class="chart-title">Delay rate by branch</h2>
+      </header>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Branch</th>
+              @for (month of months(); track $index) {
+                <th scope="col" class="num">{{ month | date: 'MMM' }}</th>
+              }
+              <th scope="col" class="num">Change {{ baselineLabel() }}</th>
+              <th scope="col">Trend</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of d.branches; track row.branch) {
+              <tr [class.low-volume]="row.lowVolume">
+                <th scope="row">
+                  {{ row.branch }}
+                  @if (row.lowVolume) {
+                    <span title="Low volume">*</span>
+                  }
+                </th>
+                @for (month of row.months; track $index) {
+                  <td class="num">
+                    @if (month.lateRate !== null) {
+                      {{ month.lateRate | percent: '1.1-1' }}
+                    } @else {
+                      <span class="muted">&mdash;</span>
+                    }
+                  </td>
+                }
+                <td class="num">
+                  @if (row.change !== null) {
+                    <span class="change" [class.up]="row.change > 0" [class.down]="row.change < 0">
+                      <span aria-hidden="true">{{ row.change | changeArrow }}</span>
+                      {{ row.change > 0 ? '+' : '' }}{{ row.change * 100 | number: '1.1-1' }} pts
+                    </span>
+                  } @else {
+                    <span class="muted">&mdash;</span>
+                  }
+                </td>
+                <td>
+                  @if (row.trend; as trend) {
+                    <span class="trend" [class]="trend">{{ trend | trendDirectionLabel }}</span>
+                  } @else {
+                    <span class="muted">&mdash;</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <div class="footnotes muted">
+        @if (lowVolumeBranches()) {
+          <p class="note">
+            * Fewer than {{ d.minDeliveries | number }} deliveries in {{ latest() | date: 'MMM' }}.
+            Changes here are mostly noise.
+          </p>
+        }
+        <p class="note">
+          Trend: Rising = up each of the last 3 months, Falling = down each of the last 3 months,
+          otherwise Mixed.
+        </p>
+      </div>
+    </section>
+
+    <section class="chart">
+      <header class="chart-header">
+        <h2 class="chart-title">Delay reasons over time</h2>
+        <span class="muted note">
+          @if (branch()) {
+            Delayed orders per month at {{ branch() }}.
+          } @else {
+            Delayed orders per month, all branches. Use the Branch filter to see one branch.
+          }
+        </span>
+      </header>
+      @if (d.reasons.length === 0) {
+        <div class="state">No delays in this period.</div>
+      } @else {
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Reason</th>
+                @for (month of months(); track $index) {
+                  <th scope="col" class="num">{{ month | date: 'MMM' }}</th>
+                }
+                <th scope="col" class="num">Change {{ baselineLabel() }}</th>
+                <th scope="col" class="num">Share of delays ({{ latest() | date: 'MMM' }})</th>
+                <th scope="col">Trend</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of d.reasons; track row.reason) {
+                <tr>
+                  <th scope="row">{{ row.reason }}</th>
+                  @for (count of row.counts; track $index) {
+                    <td class="num">{{ count | number }}</td>
+                  }
+                  <td class="num">
+                    @if (row.change !== null) {
+                      <span
+                        class="change"
+                        [class.up]="row.change > 0"
+                        [class.down]="row.change < 0"
+                      >
+                        <span aria-hidden="true">{{ row.change | changeArrow }}</span>
+                        {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.0-0' }}
+                        @if (row.changeRate !== null) {
+                          ({{ row.changeRate > 0 ? '+' : ''
+                          }}{{ row.changeRate | percent: '1.0-0' }})
+                        }
+                      </span>
+                    } @else {
+                      <span class="muted">&mdash;</span>
+                    }
+                  </td>
+                  <td class="num">
+                    {{ row.share | percent: '1.1-1' }}
+                    @if (row.shareChange !== null) {
+                      <span class="muted">
+                        ({{ row.shareChange > 0 ? '+' : ''
+                        }}{{ row.shareChange * 100 | number: '1.1-1' }} pts)
+                      </span>
+                    }
+                  </td>
+                  <td>
+                    @if (row.trend; as trend) {
+                      <span class="trend" [class]="trend">{{ trend | trendDirectionLabel }}</span>
+                    } @else {
+                      <span class="muted">&mdash;</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  }
+} @else {
+  <div class="state">No trend data.</div>
+}
