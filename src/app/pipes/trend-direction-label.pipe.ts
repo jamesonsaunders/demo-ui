@@ -5,7 +5,7 @@ import { TrendDirection } from '../models/trend-direction';
 const LABELS: Record<TrendDirection, string> = {
   [TrendDirection.Rising]: '▲ Rising',
   [TrendDirection.Falling]: '▼ Falling',
-  [TrendDirection.Mixed]: 'Mixed',
+  [TrendDirection.Stable]: 'Stable',
 };
 
 @Pipe({ name: 'trendDirectionLabel' })
