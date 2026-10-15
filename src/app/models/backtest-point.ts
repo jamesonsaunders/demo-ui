@@ -1,8 +1,12 @@
+import { RangeSource } from './range-source';
+
 export interface BacktestPoint {
   actual: number;
   expected: number;
-  low: number;
-  high: number;
+  /** low/high/inRange/rangeFrom are null for on-time rate (no range). */
+  low: number | null;
+  high: number | null;
   /** actual within low..high */
-  inRange: boolean;
+  inRange: boolean | null;
+  rangeFrom: RangeSource | null;
 }

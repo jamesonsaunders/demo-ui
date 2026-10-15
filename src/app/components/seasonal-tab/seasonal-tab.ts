@@ -1,12 +1,20 @@
 import { DatePipe, DecimalPipe, LowerCasePipe, PercentPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 
+import { RangeSource } from '../../models/range-source';
 import { SeasonalMetric } from '../../models/seasonal-metric';
 import { Season } from '../../models/season';
 import { SeasonalHistoryMonth } from '../../models/seasonal-history-month';
 import { SeasonalPattern } from '../../models/seasonal-pattern';
+import { ForecastVerdictHintPipe } from '../../pipes/forecast-verdict-hint.pipe';
+import { ForecastVerdictLabelPipe } from '../../pipes/forecast-verdict-label.pipe';
+import { MetricMissingLabelPipe } from '../../pipes/metric-missing-label.pipe';
+import { MetricValuePipe } from '../../pipes/metric-value.pipe';
+import { ProjectionMissingLabelPipe } from '../../pipes/projection-missing-label.pipe';
+import { RangeSourceLabelPipe } from '../../pipes/range-source-label.pipe';
 import { SeasonalIndexPipe } from '../../pipes/seasonal-index.pipe';
 import { SeasonalMetricLabelPipe } from '../../pipes/seasonal-metric-label.pipe';
+import { FORECAST_VERDICT_TONES } from '../../utils/forecast-verdict-tones';
 import { parseMonth } from '../../utils/parse-month';
 import { SEASONAL_METRIC_KEYS, SEASONAL_METRIC_TONES } from '../../utils/seasonal-metric-maps';
 
@@ -31,6 +39,12 @@ function historyValue(metric: SeasonalMetric, row: SeasonalHistoryMonth): number
     DecimalPipe,
     LowerCasePipe,
     PercentPipe,
+    ForecastVerdictHintPipe,
+    ForecastVerdictLabelPipe,
+    MetricMissingLabelPipe,
+    MetricValuePipe,
+    ProjectionMissingLabelPipe,
+    RangeSourceLabelPipe,
     SeasonalIndexPipe,
     SeasonalMetricLabelPipe,
   ],
@@ -42,13 +56,23 @@ export class SeasonalTab {
   /** null = no data for this branch. */
   readonly data = input.required<SeasonalPattern | null>();
   readonly loading = input.required<boolean>();
+  readonly showAccuracy = output<void>();
 
   protected readonly SeasonalMetric = SeasonalMetric;
+  protected readonly RangeSource = RangeSource;
   protected readonly metrics = Object.values(SeasonalMetric);
   protected readonly months = MONTHS;
   protected readonly metric = signal(SeasonalMetric.Total);
   protected readonly tone = computed(() => SEASONAL_METRIC_TONES[this.metric()]);
   private readonly key = computed(() => SEASONAL_METRIC_KEYS[this.metric()]);
+
+  protected readonly strength = computed(() => this.data()?.seasonalStrength[this.key()] ?? null);
+  protected readonly verdict = computed(() => this.data()?.forecastVerdict?.[this.key()] ?? null);
+  protected readonly verdictTone = computed(() => {
+    const verdict = this.verdict();
+    return verdict ? FORECAST_VERDICT_TONES[verdict] : '';
+  });
+  protected readonly workingDays = computed(() => this.data()?.forecastSetup?.workingDays ?? false);
 
   protected readonly range = computed(() => {
     const data = this.data();
@@ -128,7 +152,7 @@ export class SeasonalTab {
         agree,
         years: item.years,
         agreeLabel: index
-          ? `${index > 0 ? 'Above' : 'Below'} that year's average in ${agree} of ${item.years} years`
+          ? `${index > 0 ? 'Above' : 'Below'} the trend in ${agree} of ${item.years} years`
           : '',
       };
     });
@@ -163,21 +187,52 @@ export class SeasonalTab {
     };
   });
 
+  /** Complete history months by yyyy-MM. */
+  private readonly historyByMonth = computed(
+    () =>
+      new Map(
+        (this.data()?.history ?? []).flatMap((row) =>
+          row.complete ? [[row.periodStart.slice(0, 7), row] as const] : [],
+        ),
+      ),
+  );
+
   protected readonly projection = computed(() => {
     const key = this.key();
-    const items = (this.data()?.projection ?? []).map((item) => ({
-      month: parseMonth(item.month),
-      value: item[key],
-    }));
+    const metric = this.metric();
+    const history = this.historyByMonth();
+    const items = (this.data()?.projection ?? []).map((item) => {
+      const month = parseMonth(item.month);
+      const lastYear = history.get(`${month.getFullYear() - 1}${item.month.slice(4, 7)}`);
+      const point = key === 'onTimeRate' ? null : item[key];
+      return {
+        month,
+        point,
+        expected:
+          key === 'onTimeRate' ? (item.onTimeRate?.expected ?? null) : (point?.expected ?? null),
+        total: item.total?.expected ?? null,
+        late: item.late?.expected ?? null,
+        workingDays: point?.workingDayFactor != null ? point.workingDayFactor - 1 : null,
+        missing: item.missing[key],
+        lastYear: lastYear ? historyValue(metric, lastYear) : null,
+      };
+    });
 
-    const max = Math.max(0, ...items.map((item) => item.value?.high ?? 0));
-    const scale = (value: number) => (max ? (value / max) * 100 : 0);
-    return items.map(({ month, value }) => ({
-      month,
-      value,
-      height: value ? scale(value.expected) : 0,
-      low: value ? scale(value.low) : 0,
-      high: value ? scale(value.high) : 0,
+    const max = Math.max(
+      0,
+      ...items.flatMap((item) => [item.point?.high ?? 0, item.expected ?? 0, item.lastYear ?? 0]),
+    );
+    const scale = (value: number | null) => (max && value !== null ? (value / max) * 100 : 0);
+    return items.map((item) => ({
+      ...item,
+      height: scale(item.expected),
+      low: scale(item.point?.low ?? null),
+      high: scale(item.point?.high ?? null),
+      lastYearAt: scale(item.lastYear),
     }));
   });
+
+  protected readonly rangeSources = computed(
+    () => new Set(this.projection().flatMap((item) => (item.point ? [item.point.rangeFrom] : []))),
+  );
 }

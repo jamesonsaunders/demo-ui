@@ -1,11 +1,16 @@
 import { DatePipe, DecimalPipe, LowerCasePipe, PercentPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 
+import { RangeSource } from '../../models/range-source';
 import { SeasonalBacktest } from '../../models/seasonal-backtest';
 import { SeasonalMetric } from '../../models/seasonal-metric';
+import { ForecastVerdictHintPipe } from '../../pipes/forecast-verdict-hint.pipe';
+import { ForecastVerdictLabelPipe } from '../../pipes/forecast-verdict-label.pipe';
 import { MetricDiffPipe } from '../../pipes/metric-diff.pipe';
 import { MetricValuePipe } from '../../pipes/metric-value.pipe';
+import { RangeSourceLabelPipe } from '../../pipes/range-source-label.pipe';
 import { SeasonalMetricLabelPipe } from '../../pipes/seasonal-metric-label.pipe';
+import { FORECAST_VERDICT_TONES } from '../../utils/forecast-verdict-tones';
 import { parseMonth } from '../../utils/parse-month';
 import { SEASONAL_METRIC_KEYS, SEASONAL_METRIC_TONES } from '../../utils/seasonal-metric-maps';
 
@@ -16,8 +21,11 @@ import { SEASONAL_METRIC_KEYS, SEASONAL_METRIC_TONES } from '../../utils/seasona
     DecimalPipe,
     LowerCasePipe,
     PercentPipe,
+    ForecastVerdictHintPipe,
+    ForecastVerdictLabelPipe,
     MetricDiffPipe,
     MetricValuePipe,
+    RangeSourceLabelPipe,
     SeasonalMetricLabelPipe,
   ],
   templateUrl: './backtest-tab.html',
@@ -30,6 +38,7 @@ export class BacktestTab {
   readonly loading = input.required<boolean>();
 
   protected readonly SeasonalMetric = SeasonalMetric;
+  protected readonly RangeSource = RangeSource;
   protected readonly metrics = Object.values(SeasonalMetric);
   protected readonly metric = signal(SeasonalMetric.Total);
   protected readonly tone = computed(() => SEASONAL_METRIC_TONES[this.metric()]);
@@ -50,6 +59,10 @@ export class BacktestTab {
   });
 
   protected readonly scores = computed(() => this.data()?.[this.key()] ?? null);
+  protected readonly verdictTone = computed(() => {
+    const scores = this.scores();
+    return scores ? FORECAST_VERDICT_TONES[scores.verdict] : '';
+  });
 
   protected readonly skills = computed(() => {
     const scores = this.scores();
@@ -69,7 +82,11 @@ export class BacktestTab {
     }));
 
     const values = months.flatMap(({ point }) =>
-      point ? [point.low, point.high, point.actual, point.expected] : [],
+      point
+        ? [point.low, point.high, point.actual, point.expected].filter(
+            (value): value is number => value !== null,
+          )
+        : [],
     );
     let min = isRate && values.length ? Math.min(...values) : 0;
     let max = Math.max(0, ...values);
@@ -85,11 +102,15 @@ export class BacktestTab {
       month,
       point,
       error: point ? point.actual - point.expected : null,
-      above: point ? !point.inRange && point.actual > point.high : false,
-      low: point ? scale(point.low) : 0,
-      high: point ? scale(point.high) : 0,
+      above: point?.high != null && point.inRange === false && point.actual > point.high,
+      low: point?.low != null ? scale(point.low) : 0,
+      high: point?.high != null ? scale(point.high) : 0,
       expected: point ? scale(point.expected) : 0,
       actual: point ? scale(point.actual) : 0,
     }));
   });
+
+  protected readonly hasRoughRange = computed(() =>
+    this.rows().some(({ point }) => point?.rangeFrom === RangeSource.PastYears),
+  );
 }

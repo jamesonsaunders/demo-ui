@@ -1,3 +1,6 @@
+import { ForecastSetup } from './forecast-setup';
+import { ForecastVerdict } from './forecast-verdict';
+import { ProjectionMissing } from './projection-missing';
 import { SeasonalHighlights } from './seasonal-highlights';
 import { SeasonalHistoryMonth } from './seasonal-history-month';
 import { SeasonalMetricKey } from './seasonal-metric-key';
@@ -9,12 +12,18 @@ export interface SeasonalPattern {
   dataFrom: string;
   /** yyyy-MM, last complete month */
   dataThrough: string;
-  /** Full years used for the stats; 0 = less than a year of data. */
+  /** Full years used for the pattern section only; 0 = less than a year of data. */
   years: number;
+  /** 0-1 share of month-to-month swings (trend removed) explained by the calendar month. */
+  seasonalStrength: Record<SeasonalMetricKey, number | null>;
   /** Every month from dataFrom to dataThrough, oldest first. */
   history: SeasonalHistoryMonth[];
   /** Always 12 entries, Jan-Dec. */
   months: SeasonalMonth[];
   highlights: Record<SeasonalMetricKey, SeasonalHighlights>;
+  /** null when no projection was requested. */
+  forecastSetup: ForecastSetup | null;
+  forecastVerdict: Record<SeasonalMetricKey, ForecastVerdict> | null;
+  projectionMissing: ProjectionMissing | null;
   projection: SeasonalProjectionMonth[];
 }

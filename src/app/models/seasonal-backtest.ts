@@ -11,8 +11,6 @@ export interface SeasonalBacktest extends Record<SeasonalMetricKey, BacktestScor
   years: number;
   /** Extra weight on recent history that tested best: 0, 0.25, 0.5, 0.75 or 1. */
   recentWeight: number;
-  /** Weight on the recent trend that tested best. */
-  trendWeight: number;
   /** Whether the working-day adjustment tested better. */
   workingDays: boolean;
   /** Number of test starting months. */

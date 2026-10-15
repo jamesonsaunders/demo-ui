@@ -2,9 +2,9 @@ export interface MonthStat {
   average: number | null;
   /** Median across complete years. */
   typical: number | null;
-  /** vs. a typical month. Counts: ratio - 1 (0.2 = +20%). On-time rate: difference (0.02 = +2 pts). */
+  /** Median gap from the trend line. Counts: 0.08 = +8%. On-time rate: difference (0.02 = +2 pts). */
   index: number | null;
-  /** Years this month was above that year's average. */
+  /** Years this month was above the trend line. */
   yearsAbove: number;
   yearsBelow: number;
 }

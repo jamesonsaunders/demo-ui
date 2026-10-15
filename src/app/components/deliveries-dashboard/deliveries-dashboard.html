@@ -86,7 +86,11 @@
 >
   @switch (activeTab()) {
     @case (DashboardTab.Seasonal) {
-      <app-seasonal-tab [data]="seasonal()" [loading]="seasonalLoading()" />
+      <app-seasonal-tab
+        [data]="seasonal()"
+        [loading]="seasonalLoading()"
+        (showAccuracy)="filterState.selectTab(DashboardTab.Backtest)"
+      />
     }
     @case (DashboardTab.Backtest) {
       <app-backtest-tab [data]="backtest()" [loading]="backtestLoading()" />

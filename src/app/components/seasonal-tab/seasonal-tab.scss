@@ -93,6 +93,53 @@
   &::after {
     bottom: 0;
   }
+
+  &.rough {
+    width: 0;
+    border-left: 2px dashed var(--color-text-muted);
+    background: none;
+  }
+}
+
+.projection-last-year {
+  position: absolute;
+  left: 50%;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  background: var(--color-text);
+  box-shadow: 0 0 0 1px var(--color-text);
+  transform: translate(-50%, 50%);
+  transition: bottom 0.3s ease;
+}
+
+.legend-bar {
+  width: 0.875rem;
+  height: 0.75rem;
+  border: 1px dashed var(--tone);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--tone) 25%, transparent);
+}
+
+.legend-range {
+  height: 0.875rem;
+  border-left: 2px solid var(--color-text-muted);
+
+  &.rough {
+    border-left-style: dashed;
+  }
+}
+
+.legend-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: var(--color-text);
+}
+
+.footnote {
+  margin-top: 0.75rem;
 }
 
 .scale-legend {

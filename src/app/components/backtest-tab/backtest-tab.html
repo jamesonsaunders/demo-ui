@@ -6,21 +6,18 @@
   <div class="toolbar">
     <p class="muted note">
       @if (range(); as r) {
-        {{ d.tests }} {{ d.tests === 1 ? 'test' : 'tests' }} over
-        {{ r.dataFrom | date: 'MMM y' }} &ndash; {{ r.dataThrough | date: 'MMM y' }}, each
-        forecasting 1&ndash;12 months ahead. Uses {{ d.years }}
-        {{ d.years === 1 ? 'year' : 'years' }} of history
-        @if (d.recentWeight) {
-          with {{ d.recentWeight | percent }} extra weight on recent months,
-        } @else {
-          weighted evenly,
-        }
-        @if (d.trendWeight) {
-          {{ d.trendWeight | percent }} weight on the recent trend,
-        } @else {
-          no trend,
-        }
-        {{ d.workingDays ? 'adjusted' : 'not adjusted' }} for working days. That setup tested best.
+        We re-ran the forecast {{ d.tests }} {{ d.tests === 1 ? 'time' : 'times' }} on past data ({{
+          r.dataFrom | date: 'MMM y'
+        }}
+        &ndash; {{ r.dataThrough | date: 'MMM y' }}). Each time it only saw the months before the
+        test, forecast the next 1&ndash;12 months, and was then compared with what actually
+        happened. Best setup: the last {{ d.years }} {{ d.years === 1 ? 'year' : 'years'
+        }}{{
+          d.recentWeight
+            ? ', with ' + (d.recentWeight | percent) + ' extra weight on recent months'
+            : ''
+        }}{{ d.workingDays ? ', adjusted for working days' : '' }}. The Seasonal trends forecast
+        uses this setup.
       }
     </p>
     <div class="segmented" role="group" aria-label="Metric">
@@ -40,6 +37,11 @@
 
   <div class="backtest" [class]="tone()">
     @if (scores(); as s) {
+      <div class="verdict" [class]="verdictTone()">
+        <span class="verdict-label">Reliability: {{ s.verdict | forecastVerdictLabel }}</span>
+        <p class="verdict-text">{{ s.verdict | forecastVerdictHint: !isRate }}</p>
+      </div>
+
       @if (s.months) {
         <div class="kpis">
           @if (s.coverage != null) {
@@ -47,7 +49,7 @@
               <span class="kpi-label">Inside 80% range</span>
               <span class="kpi-value">{{ s.coverage | percent: '1.0-0' }}</span>
               <span class="kpi-sub"
-                >of {{ s.coverageMonths | number }} forecasts with a range (aim: 80%)</span
+                >of {{ s.coverageMonths | number }} forecasts with an 80% range (aim: 80%)</span
               >
             </div>
           }
@@ -87,6 +89,85 @@
             </div>
           }
         </div>
+
+        <figure class="chart">
+          <figcaption class="chart-header">
+            <div>
+              <h2 class="chart-title">Accuracy by how far ahead</h2>
+              <span class="muted note">Forecasts further ahead are usually less accurate.</span>
+            </div>
+          </figcaption>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Months ahead</th>
+                  <th scope="col" class="num">Forecasts tested</th>
+                  <th scope="col" class="num">Avg miss</th>
+                  @if (!isRate) {
+                    <th scope="col" class="num">Inside 80% range</th>
+                  }
+                  <th scope="col" class="num">Bias</th>
+                  <th scope="col" class="num">vs. same month last year</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (a of s.byAhead; track a.ahead) {
+                  <tr>
+                    <th scope="row">{{ a.ahead }} {{ a.ahead === 1 ? 'month' : 'months' }}</th>
+                    <td class="num">{{ a.months | number }}</td>
+                    <td class="num">
+                      @if (a.mae == null) {
+                        <span class="muted">&mdash;</span>
+                      } @else {
+                        {{ a.mae | metricDiff: isRate }}
+                        @if (a.wape != null) {
+                          <span class="muted">({{ a.wape | percent: '1.0-1' }})</span>
+                        }
+                      }
+                    </td>
+                    @if (!isRate) {
+                      <td class="num">
+                        @if (a.coverage == null) {
+                          <span class="muted">&mdash;</span>
+                        } @else {
+                          {{ a.coverage | percent: '1.0-0' }}
+                        }
+                      </td>
+                    }
+                    <td class="num">
+                      @if (a.bias == null) {
+                        <span class="muted">&mdash;</span>
+                      } @else {
+                        {{ a.bias | metricDiff: isRate : true }}
+                      }
+                    </td>
+                    <td class="num">
+                      @if (a.skillVsLastYear == null) {
+                        <span class="muted">&mdash;</span>
+                      } @else {
+                        <span
+                          class="skill"
+                          [class.up]="a.skillVsLastYear > 0"
+                          [class.down]="a.skillVsLastYear < 0"
+                        >
+                          {{
+                            (a.skillVsLastYear < 0 ? -a.skillVsLastYear : a.skillVsLastYear)
+                              | percent: '1.0-0'
+                          }}
+                          {{ a.skillVsLastYear >= 0 ? 'less' : 'more' }} error
+                        </span>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="muted note footnote">
+            Avg miss = average gap between forecast and actual. Bias: + means the forecast ran high.
+          </p>
+        </figure>
       } @else {
         <div class="state">No forecasts could be scored for this metric.</div>
       }
@@ -107,10 +188,17 @@
           }
         </div>
         <div class="legend muted" aria-hidden="true">
-          <span><span class="legend-band"></span> 80% range</span>
+          @if (!isRate) {
+            <span><span class="legend-band"></span> 80% range</span>
+            @if (hasRoughRange()) {
+              <span><span class="legend-band rough"></span> Rough range</span>
+            }
+          }
           <span><span class="legend-expected"></span> Forecast</span>
           <span><span class="legend-actual"></span> Actual</span>
-          <span><span class="legend-actual miss"></span> Outside range</span>
+          @if (!isRate) {
+            <span><span class="legend-actual miss"></span> Outside range</span>
+          }
         </div>
       </figcaption>
       <div class="chart-scroll">
@@ -126,15 +214,18 @@
               </span>
               <div class="backtest-plot" aria-hidden="true">
                 @if (r.point; as p) {
-                  <div
-                    class="backtest-band"
-                    [style.bottom.%]="r.low"
-                    [style.height.%]="r.high - r.low"
-                  ></div>
+                  @if (p.low !== null && p.high !== null) {
+                    <div
+                      class="backtest-band"
+                      [class.rough]="p.rangeFrom === RangeSource.PastYears"
+                      [style.bottom.%]="r.low"
+                      [style.height.%]="r.high - r.low"
+                    ></div>
+                  }
                   <div class="backtest-expected" [style.bottom.%]="r.expected"></div>
                   <div
                     class="backtest-actual"
-                    [class.miss]="!p.inRange"
+                    [class.miss]="p.inRange === false"
                     [style.bottom.%]="r.actual"
                   ></div>
                 }
@@ -160,9 +251,13 @@
               <th scope="col">Month</th>
               <th scope="col" class="num">Actual</th>
               <th scope="col" class="num">Forecast</th>
-              <th scope="col" class="num">80% range</th>
-              <th scope="col" class="num">Error</th>
-              <th scope="col">Result</th>
+              @if (!isRate) {
+                <th scope="col" class="num">Range</th>
+              }
+              <th scope="col" class="num">Error (actual &minus; forecast)</th>
+              @if (!isRate) {
+                <th scope="col">Result</th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -172,23 +267,58 @@
                 @if (r.point; as p) {
                   <td class="num">{{ p.actual | metricValue: isRate }}</td>
                   <td class="num">{{ p.expected | metricValue: isRate }}</td>
-                  <td class="num">
-                    {{ p.low | metricValue: isRate }} &ndash; {{ p.high | metricValue: isRate }}
-                  </td>
+                  @if (!isRate) {
+                    <td class="num">
+                      @if (p.low !== null && p.high !== null) {
+                        @if (p.rangeFrom === RangeSource.PastYears) {
+                          <span class="tag">{{ p.rangeFrom | rangeSourceLabel }}</span>
+                        }
+                        {{ p.low | metricValue: isRate }} &ndash; {{ p.high | metricValue: isRate }}
+                      } @else {
+                        <span class="muted">&mdash;</span>
+                      }
+                    </td>
+                  }
                   <td class="num">{{ r.error | metricDiff: isRate : true }}</td>
-                  <td>
-                    <span class="result" [class.miss]="!p.inRange">
-                      {{ p.inRange ? 'In range' : r.above ? 'Above range' : 'Below range' }}
-                    </span>
-                  </td>
+                  @if (!isRate) {
+                    <td>
+                      @if (p.inRange === null) {
+                        <span class="muted">&mdash;</span>
+                      } @else {
+                        <span class="result" [class.miss]="!p.inRange">
+                          {{ p.inRange ? 'In range' : r.above ? 'Above range' : 'Below range' }}
+                        </span>
+                      }
+                    </td>
+                  }
                 } @else {
-                  <td class="muted" colspan="5">No deliveries or no forecast</td>
+                  <td class="muted" [attr.colspan]="isRate ? 3 : 5">
+                    No deliveries or no forecast
+                  </td>
                 }
               </tr>
             }
           </tbody>
         </table>
       </div>
+      @if (!isRate) {
+        <div class="footnotes muted note">
+          <p class="note">
+            80% range: if the forecast is well calibrated, about 8 in 10 actual months land inside
+            it.
+          </p>
+          @if (hasRoughRange()) {
+            <p class="note">
+              Rough range: there weren't enough past forecasts yet to measure an 80% range, so it's
+              the spread across past years. Not counted in "Inside 80% range".
+            </p>
+          }
+        </div>
+      } @else {
+        <p class="muted note footnote">
+          On-time rate is calculated from the late and total forecasts, so it has no range.
+        </p>
+      }
     </figure>
   </div>
 } @else {

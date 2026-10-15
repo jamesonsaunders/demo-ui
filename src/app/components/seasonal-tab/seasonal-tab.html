@@ -37,9 +37,7 @@
               <span class="kpi-label">Highest month</span>
               <span class="kpi-value">{{ m.month | date: 'MMMM' }}</span>
               <span class="kpi-sub" [title]="m.agreeLabel">
-                {{ m.index | seasonalIndex: isRate }} vs avg &middot; {{ m.agree }}/{{
-                  m.years
-                }}
+                {{ m.index | seasonalIndex: isRate }} vs trend &middot; {{ m.agree }}/{{ m.years }}
                 yrs
               </span>
             </div>
@@ -49,9 +47,7 @@
               <span class="kpi-label">Lowest month</span>
               <span class="kpi-value">{{ m.month | date: 'MMMM' }}</span>
               <span class="kpi-sub" [title]="m.agreeLabel">
-                {{ m.index | seasonalIndex: isRate }} vs avg &middot; {{ m.agree }}/{{
-                  m.years
-                }}
+                {{ m.index | seasonalIndex: isRate }} vs trend &middot; {{ m.agree }}/{{ m.years }}
                 yrs
               </span>
             </div>
@@ -62,7 +58,7 @@
               <span class="kpi-value"
                 >{{ s.start | date: 'MMM' }}&ndash;{{ s.end | date: 'MMM' }}</span
               >
-              <span class="kpi-sub">{{ s.index | seasonalIndex: isRate }} vs avg</span>
+              <span class="kpi-sub">{{ s.index | seasonalIndex: isRate }} vs trend</span>
             </div>
           }
           @if (h.lowSeason; as s) {
@@ -71,7 +67,14 @@
               <span class="kpi-value"
                 >{{ s.start | date: 'MMM' }}&ndash;{{ s.end | date: 'MMM' }}</span
               >
-              <span class="kpi-sub">{{ s.index | seasonalIndex: isRate }} vs avg</span>
+              <span class="kpi-sub">{{ s.index | seasonalIndex: isRate }} vs trend</span>
+            </div>
+          }
+          @if (strength() !== null) {
+            <div class="kpi">
+              <span class="kpi-label">How seasonal</span>
+              <span class="kpi-value">{{ strength() | percent: '1.0-0' }}</span>
+              <span class="kpi-sub">of month-to-month swings come from the time of year</span>
             </div>
           }
         </div>
@@ -83,8 +86,8 @@
             Seasonal pattern: {{ metric() | seasonalMetricLabel | lowercase }}
           </h2>
           <span class="muted note">
-            vs. a typical month &middot; yrs = how often the month was on that side of its year's
-            average
+            How far each month usually sits above or below the trend &middot; yrs = how many years
+            it was on that side
           </span>
         </figcaption>
         <div class="chart-scroll">
@@ -118,65 +121,214 @@
             }
           </div>
         </div>
+        @if (d.forecastSetup; as s) {
+          @if (s.years !== d.years || s.workingDays) {
+            <p class="muted note footnote">
+              This chart uses {{ d.years }} {{ d.years === 1 ? 'year' : 'years' }} with no
+              working-day adjustment. The forecast below uses {{ s.years }}
+              {{ s.years === 1 ? 'year' : 'years'
+              }}{{ s.workingDays ? ' and adjusts for working days' : '' }}, so its seasonal effects
+              can differ slightly.
+            </p>
+          }
+        }
       </figure>
-
-      @if (projection().length) {
-        <figure class="chart">
-          <figcaption class="chart-header">
-            <h2 class="chart-title">
-              Projected {{ metric() | seasonalMetricLabel | lowercase }}: next
-              {{ projection().length }} months
-            </h2>
-            <span class="muted note">
-              Estimate from the recent trend and seasonal pattern &middot; line = range from past
-              years
-            </span>
-          </figcaption>
-          <div class="chart-scroll">
-            <div class="chart-body">
-              @for (p of projection(); track $index) {
-                <div class="chart-col">
-                  <span class="chart-value">
-                    @if (p.value === null) {
-                      &mdash;
-                    } @else if (isRate) {
-                      {{ p.value.expected | percent: '1.0-1' }}
-                    } @else {
-                      {{ p.value.expected | number: '1.0-0' }}
-                    }
-                  </span>
-                  <div class="projection-bars" aria-hidden="true">
-                    @if (p.value) {
-                      <div class="projection-bar" [style.height.%]="p.height"></div>
-                      <div
-                        class="projection-range"
-                        [style.bottom.%]="p.low"
-                        [style.height.%]="p.high - p.low"
-                      ></div>
-                    }
-                  </div>
-                  <span class="chart-label">{{ p.month | date: 'MMM yy' }}</span>
-                  @if (p.value) {
-                    <span class="chart-sub">
-                      @if (isRate) {
-                        {{ p.value.low | percent: '1.0-0' }}&ndash;{{
-                          p.value.high | percent: '1.0-0'
-                        }}
-                      } @else {
-                        {{ p.value.low | number: '1.0-0' }}&ndash;{{
-                          p.value.high | number: '1.0-0'
-                        }}
-                      }
-                    </span>
-                  }
-                </div>
-              }
-            </div>
-          </div>
-        </figure>
-      }
     } @else {
       <div class="state">Seasonal patterns need at least one full year of data.</div>
+    }
+
+    @if (d.projectionMissing; as reason) {
+      <figure class="chart">
+        <figcaption class="chart-header">
+          <h2 class="chart-title">Forecast</h2>
+        </figcaption>
+        <div class="state">{{ reason | projectionMissingLabel }}</div>
+      </figure>
+    } @else if (projection().length) {
+      <figure class="chart">
+        <figcaption class="chart-header">
+          <div>
+            <h2 class="chart-title">
+              Forecast: {{ metric() | seasonalMetricLabel | lowercase }}, next
+              {{ projection().length }} months
+            </h2>
+            @if (d.forecastSetup; as s) {
+              <span class="muted note">
+                Built from the last {{ s.years }} {{ s.years === 1 ? 'year' : 'years'
+                }}{{
+                  s.recentWeight
+                    ? ', with ' + (s.recentWeight | percent) + ' extra weight on recent months'
+                    : ''
+                }}{{ s.workingDays ? ', adjusted for working days' : '' }}. This setup was the most
+                accurate when tested on past months.
+              </span>
+            }
+          </div>
+          <div class="legend muted" aria-hidden="true">
+            <span><span class="legend-bar"></span> Forecast</span>
+            @if (!isRate) {
+              @if (rangeSources().has(RangeSource.PastMisses)) {
+                <span><span class="legend-range"></span> 80% range</span>
+              }
+              @if (rangeSources().has(RangeSource.PastYears)) {
+                <span><span class="legend-range rough"></span> Rough range</span>
+              }
+            }
+            <span><span class="legend-dot"></span> Same month last year</span>
+          </div>
+        </figcaption>
+
+        @if (verdict(); as v) {
+          <div class="verdict" [class]="verdictTone()">
+            <span class="verdict-label">Reliability: {{ v | forecastVerdictLabel }}</span>
+            <p class="verdict-text">{{ v | forecastVerdictHint: !isRate }}</p>
+            <button type="button" class="link-button" (click)="showAccuracy.emit()">
+              See how it was tested
+            </button>
+          </div>
+        }
+
+        <div class="chart-scroll">
+          <div class="chart-body">
+            @for (p of projection(); track $index) {
+              <div class="chart-col">
+                <span class="chart-value">
+                  @if (p.expected === null) {
+                    &mdash;
+                  } @else {
+                    {{ p.expected | metricValue: isRate }}
+                  }
+                </span>
+                <div class="projection-bars" aria-hidden="true">
+                  @if (p.expected !== null) {
+                    <div class="projection-bar" [style.height.%]="p.height"></div>
+                  }
+                  @if (p.point; as pt) {
+                    <div
+                      class="projection-range"
+                      [class.rough]="pt.rangeFrom === RangeSource.PastYears"
+                      [style.bottom.%]="p.low"
+                      [style.height.%]="p.high - p.low"
+                    ></div>
+                  }
+                  @if (p.lastYear !== null) {
+                    <div class="projection-last-year" [style.bottom.%]="p.lastYearAt"></div>
+                  }
+                </div>
+                <span class="chart-label">{{ p.month | date: 'MMM yy' }}</span>
+                @if (p.point; as pt) {
+                  <span class="chart-sub">
+                    {{ pt.low | metricValue: isRate }}&ndash;{{ pt.high | metricValue: isRate }}
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+
+        <h3 class="subhead">How each month is calculated</h3>
+        <p class="muted note">
+          @if (isRate) {
+            On-time rate = 1 &minus; forecast late &divide; forecast total. It has no range of its
+            own.
+          } @else if (workingDays()) {
+            Forecast = average month &times; working days &times; (1 + seasonal effect).
+          } @else {
+            Forecast = average month &times; (1 + seasonal effect).
+          }
+        </p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                @if (isRate) {
+                  <th scope="col" class="num">Forecast total</th>
+                  <th scope="col" class="num">Forecast late</th>
+                  <th scope="col" class="num">On-time rate</th>
+                } @else {
+                  <th scope="col" class="num" title="Recent level with the seasonal effect removed">
+                    Average month
+                  </th>
+                  <th
+                    scope="col"
+                    class="num"
+                    title="How far this month usually sits from the trend"
+                  >
+                    Seasonal effect
+                  </th>
+                  @if (workingDays()) {
+                    <th scope="col" class="num" title="Working days vs. an average month">
+                      Working days
+                    </th>
+                  }
+                  <th scope="col" class="num">Forecast</th>
+                  <th scope="col" class="num">Range</th>
+                }
+                <th scope="col" class="num">Same month last year</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of projection(); track $index) {
+                <tr>
+                  <th scope="row">{{ p.month | date: 'MMM y' }}</th>
+                  @if (isRate) {
+                    @if (p.expected !== null) {
+                      <td class="num">{{ p.total | metricValue: false }}</td>
+                      <td class="num">{{ p.late | metricValue: false }}</td>
+                      <td class="num strong">{{ p.expected | metricValue: true }}</td>
+                    } @else {
+                      <td class="muted" colspan="3">{{ p.missing | metricMissingLabel }}</td>
+                    }
+                  } @else {
+                    @if (p.point; as pt) {
+                      <td class="num">{{ pt.level | metricValue: false }}</td>
+                      <td class="num">{{ pt.seasonalEffect | seasonalIndex: false }}</td>
+                      @if (workingDays()) {
+                        <td class="num">{{ p.workingDays | seasonalIndex: false }}</td>
+                      }
+                      <td class="num strong">{{ pt.expected | metricValue: false }}</td>
+                      <td class="num">
+                        @if (pt.rangeFrom === RangeSource.PastYears) {
+                          <span class="tag">{{ pt.rangeFrom | rangeSourceLabel }}</span>
+                        }
+                        {{ pt.low | metricValue: false }}&ndash;{{ pt.high | metricValue: false }}
+                      </td>
+                    } @else {
+                      <td class="muted" [attr.colspan]="workingDays() ? 5 : 4">
+                        {{ p.missing | metricMissingLabel }}
+                      </td>
+                    }
+                  }
+                  <td class="num">
+                    @if (p.lastYear === null) {
+                      <span class="muted">&mdash;</span>
+                    } @else {
+                      {{ p.lastYear | metricValue: isRate }}
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (!isRate) {
+          <div class="footnotes muted note">
+            @if (rangeSources().has(RangeSource.PastMisses)) {
+              <p class="note">
+                80% range: in testing on past months, about 8 in 10 actual months landed inside a
+                range like this.
+              </p>
+            }
+            @if (rangeSources().has(RangeSource.PastYears)) {
+              <p class="note">
+                Rough range: there aren't enough past forecasts to measure an 80% range yet, so this
+                is the spread across past years. It is not an 80% range.
+              </p>
+            }
+          </div>
+        }
+      </figure>
     }
 
     <figure class="chart">
