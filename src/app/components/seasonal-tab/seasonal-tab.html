@@ -6,10 +6,12 @@
   <div class="toolbar">
     <p class="muted note">
       @if (range(); as r) {
-        {{ r.from | date: 'MMM y' }} &ndash; {{ r.through | date: 'MMM y' }}.
-      }
-      @if (d.years) {
-        Pattern uses {{ d.years }} full {{ d.years === 1 ? 'year' : 'years' }}.
+        History: {{ r.historyFrom | date: 'MMM y' }} &ndash; {{ r.through | date: 'MMM y' }}.
+        @if (d.years) {
+          Pattern and forecast both use the last {{ d.years }}
+          {{ d.years === 1 ? 'year' : 'years' }} ({{ r.from | date: 'MMM y' }} &ndash;
+          {{ r.through | date: 'MMM y' }}), the setup that tested best.
+        }
       }
       The date range filter doesn't apply here.
     </p>
@@ -86,8 +88,10 @@
             Seasonal pattern: {{ metric() | seasonalMetricLabel | lowercase }}
           </h2>
           <span class="muted note">
-            How far each month usually sits above or below the trend &middot; yrs = how many years
-            it was on that side
+            How far each month usually sits above or below the trend{{
+              workingDays() ? ", after adjusting for each month's mix of weekdays" : ''
+            }}
+            &middot; yrs = how many years it was on that side
           </span>
         </figcaption>
         <div class="chart-scroll">
@@ -121,17 +125,6 @@
             }
           </div>
         </div>
-        @if (d.forecastSetup; as s) {
-          @if (s.years !== d.years || s.workingDays) {
-            <p class="muted note footnote">
-              This chart uses {{ d.years }} {{ d.years === 1 ? 'year' : 'years' }} with no
-              working-day adjustment. The forecast below uses {{ s.years }}
-              {{ s.years === 1 ? 'year' : 'years'
-              }}{{ s.workingDays ? ' and adjusts for working days' : '' }}, so its seasonal effects
-              can differ slightly.
-            </p>
-          }
-        }
       </figure>
     } @else {
       <div class="state">Seasonal patterns need at least one full year of data.</div>
@@ -152,17 +145,13 @@
               Forecast: {{ metric() | seasonalMetricLabel | lowercase }}, next
               {{ projection().length }} months
             </h2>
-            @if (d.forecastSetup; as s) {
-              <span class="muted note">
-                Built from the last {{ s.years }} {{ s.years === 1 ? 'year' : 'years'
-                }}{{
-                  s.recentWeight
-                    ? ', with ' + (s.recentWeight | percent) + ' extra weight on recent months'
-                    : ''
-                }}{{ s.workingDays ? ', adjusted for working days' : '' }}. This setup was the most
-                accurate when tested on past months.
-              </span>
-            }
+            @let s = d.forecastSetup;
+            <span class="muted note">
+              Same setup as the pattern above: the last {{ s.years }}
+              {{ s.years === 1 ? 'year' : 'years' }}, {{ s.recentWeight | recentWeightLabel
+              }}{{ s.workingDays ? ", adjusted for each month's weekday mix" : '' }}. Starts
+              {{ projection()[0].month | date: 'MMM y' }}, the month after the last month with data.
+            </span>
           </div>
           <div class="legend muted" aria-hidden="true">
             <span><span class="legend-bar"></span> Forecast</span>
@@ -232,7 +221,7 @@
             On-time rate = 1 &minus; forecast late &divide; forecast total. It has no range of its
             own.
           } @else if (workingDays()) {
-            Forecast = average month &times; working days &times; (1 + seasonal effect).
+            Forecast = average month &times; weekday mix &times; (1 + seasonal effect).
           } @else {
             Forecast = average month &times; (1 + seasonal effect).
           }
@@ -258,8 +247,12 @@
                     Seasonal effect
                   </th>
                   @if (workingDays()) {
-                    <th scope="col" class="num" title="Working days vs. an average month">
-                      Working days
+                    <th
+                      scope="col"
+                      class="num"
+                      title="This month's mix of weekdays vs. an average month (not holidays)"
+                    >
+                      Weekday mix
                     </th>
                   }
                   <th scope="col" class="num">Forecast</th>

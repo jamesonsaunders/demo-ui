@@ -9,6 +9,7 @@ import { ForecastVerdictLabelPipe } from '../../pipes/forecast-verdict-label.pip
 import { MetricDiffPipe } from '../../pipes/metric-diff.pipe';
 import { MetricValuePipe } from '../../pipes/metric-value.pipe';
 import { RangeSourceLabelPipe } from '../../pipes/range-source-label.pipe';
+import { RecentWeightLabelPipe } from '../../pipes/recent-weight-label.pipe';
 import { SeasonalMetricLabelPipe } from '../../pipes/seasonal-metric-label.pipe';
 import { FORECAST_VERDICT_TONES } from '../../utils/forecast-verdict-tones';
 import { parseMonth } from '../../utils/parse-month';
@@ -26,6 +27,7 @@ import { SEASONAL_METRIC_KEYS, SEASONAL_METRIC_TONES } from '../../utils/seasona
     MetricDiffPipe,
     MetricValuePipe,
     RangeSourceLabelPipe,
+    RecentWeightLabelPipe,
     SeasonalMetricLabelPipe,
   ],
   templateUrl: './backtest-tab.html',
@@ -101,7 +103,8 @@ export class BacktestTab {
     return months.map(({ month, point }) => ({
       month,
       point,
-      error: point ? point.actual - point.expected : null,
+      // Same sign as bias: + = forecast ran high.
+      error: point ? point.expected - point.actual : null,
       above: point?.high != null && point.inRange === false && point.actual > point.high,
       low: point?.low != null ? scale(point.low) : 0,
       high: point?.high != null ? scale(point.high) : 0,

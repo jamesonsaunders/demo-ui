@@ -31,7 +31,6 @@ import { DelayReasonsTab } from '../delay-reasons-tab/delay-reasons-tab';
 import { SeasonalTab } from '../seasonal-tab/seasonal-tab';
 import { TrendsTab } from '../trends-tab/trends-tab';
 
-const SEASONAL_YEARS = 3;
 const SEASONAL_PROJECT_MONTHS = 6;
 const TRENDS_MONTHS = 6;
 
@@ -165,9 +164,7 @@ export class DeliveriesDashboard implements OnInit {
   private async loadSeasonal(branch: string): Promise<void> {
     this.seasonalLoading.set(true);
     try {
-      this.seasonal.set(
-        await this.api.getSeasonal(branch || undefined, SEASONAL_YEARS, SEASONAL_PROJECT_MONTHS),
-      );
+      this.seasonal.set(await this.api.getSeasonal(branch || undefined, SEASONAL_PROJECT_MONTHS));
       this.seasonalLoading.set(false);
     } catch (err) {
       this.seasonal.set(null);

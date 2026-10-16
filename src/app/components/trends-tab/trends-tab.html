@@ -115,8 +115,12 @@
           </p>
         }
         <p class="note">
-          Trend: Rising = up each of the last 3 months, Falling = down each of the last 3 months,
-          otherwise Stable.
+          Trend: straight-line fit over the last 4 months. Rising/Falling = changing by at least 1
+          pt a month (reasons: 10% of their average a month), otherwise Stable.
+        </p>
+        <p class="note">
+          Change {{ baselineLabel() }} compares a single month, Trend looks at the last 4 months, so
+          the two can disagree.
         </p>
       </div>
     </section>
@@ -193,6 +197,12 @@
               }
             </tbody>
           </table>
+        </div>
+        <div class="footnotes muted">
+          <p class="note">
+            Reasons are grouped by their exact text in Odoo (ignoring case), so different wordings
+            of the same reason show as separate rows.
+          </p>
         </div>
       }
     </section>

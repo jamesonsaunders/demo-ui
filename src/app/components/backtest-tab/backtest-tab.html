@@ -11,13 +11,10 @@
         }}
         &ndash; {{ r.dataThrough | date: 'MMM y' }}). Each time it only saw the months before the
         test, forecast the next 1&ndash;12 months, and was then compared with what actually
-        happened. Best setup: the last {{ d.years }} {{ d.years === 1 ? 'year' : 'years'
-        }}{{
-          d.recentWeight
-            ? ', with ' + (d.recentWeight | percent) + ' extra weight on recent months'
-            : ''
-        }}{{ d.workingDays ? ', adjusted for working days' : '' }}. The Seasonal trends forecast
-        uses this setup.
+        happened. Best setup: the last {{ d.years }} {{ d.years === 1 ? 'year' : 'years' }},
+        {{ d.recentWeight | recentWeightLabel
+        }}{{ d.workingDays ? ", adjusted for each month's weekday mix" : '' }}. The Seasonal trends
+        forecast uses this setup.
       }
     </p>
     <div class="segmented" role="group" aria-label="Metric">
@@ -254,7 +251,7 @@
               @if (!isRate) {
                 <th scope="col" class="num">Range</th>
               }
-              <th scope="col" class="num">Error (actual &minus; forecast)</th>
+              <th scope="col" class="num">Error (forecast &minus; actual)</th>
               @if (!isRate) {
                 <th scope="col">Result</th>
               }

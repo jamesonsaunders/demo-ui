@@ -12,6 +12,7 @@ import { MetricMissingLabelPipe } from '../../pipes/metric-missing-label.pipe';
 import { MetricValuePipe } from '../../pipes/metric-value.pipe';
 import { ProjectionMissingLabelPipe } from '../../pipes/projection-missing-label.pipe';
 import { RangeSourceLabelPipe } from '../../pipes/range-source-label.pipe';
+import { RecentWeightLabelPipe } from '../../pipes/recent-weight-label.pipe';
 import { SeasonalIndexPipe } from '../../pipes/seasonal-index.pipe';
 import { SeasonalMetricLabelPipe } from '../../pipes/seasonal-metric-label.pipe';
 import { FORECAST_VERDICT_TONES } from '../../utils/forecast-verdict-tones';
@@ -45,6 +46,7 @@ function historyValue(metric: SeasonalMetric, row: SeasonalHistoryMonth): number
     MetricValuePipe,
     ProjectionMissingLabelPipe,
     RangeSourceLabelPipe,
+    RecentWeightLabelPipe,
     SeasonalIndexPipe,
     SeasonalMetricLabelPipe,
   ],
@@ -72,11 +74,17 @@ export class SeasonalTab {
     const verdict = this.verdict();
     return verdict ? FORECAST_VERDICT_TONES[verdict] : '';
   });
-  protected readonly workingDays = computed(() => this.data()?.forecastSetup?.workingDays ?? false);
+  protected readonly workingDays = computed(() => this.data()?.forecastSetup.workingDays ?? false);
 
   protected readonly range = computed(() => {
     const data = this.data();
-    return data && { from: parseMonth(data.dataFrom), through: parseMonth(data.dataThrough) };
+    if (!data) return null;
+    const historyFrom = data.history[0]?.periodStart ?? data.dataFrom;
+    return {
+      historyFrom: parseMonth(historyFrom),
+      from: parseMonth(data.dataFrom),
+      through: parseMonth(data.dataThrough),
+    };
   });
 
   /** [year, rows indexed by month (0-11)], oldest year first. */

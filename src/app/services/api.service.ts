@@ -43,16 +43,11 @@ export class ApiService {
   }
 
   /** 404 when the branch has no data (or only its go-live month). */
-  getSeasonal(
-    branch: string | undefined,
-    years: number,
-    projectMonths: number,
-  ): Promise<SeasonalPattern> {
+  getSeasonal(branch: string | undefined, projectMonths: number): Promise<SeasonalPattern> {
     return firstValueFrom(
       this.http.get<SeasonalPattern>(`${this.baseUrl}/api/deliveries/seasonal`, {
         params: this.toParams({
           branch,
-          years: String(years),
           projectMonths: String(projectMonths),
         }),
       }),
