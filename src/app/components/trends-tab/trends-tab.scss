@@ -83,3 +83,8 @@
     color: var(--color-text-muted);
   }
 }
+
+// Long headers and reason names wrap so the Trend column stays visible.
+.table-wrap th {
+  white-space: normal;
+}
